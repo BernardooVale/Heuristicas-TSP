@@ -343,7 +343,7 @@ For fresh repository clones:
 
 ### Step 1: Open terminal in project root
 ```bash
-cd heu_e_met_tsp_instances
+cd Heuristicas-TSP
 ```
 
 ### Step 2: Create and activate a virtual environment (`venv`)
@@ -365,7 +365,7 @@ pip install -r requirements.txt
 
 ### Step 4: Run the benchmarking simulation
 ```bash
-python tsp_framework.py
+python tsp_heuristics_framework.py
 ```
 
 All CSV metric tables in `resultados/` and visual plots in `graficos/` will be regenerated automatically.
