@@ -1,0 +1,54 @@
+\begin{thebibliography}{1}
+
+\bibitem{bentley1992}
+Jon~Louis Bentley.
+\newblock Fast algorithms for geometric traveling salesman problems.
+\newblock {\em ORSA Journal on Computing}, 4(4):387--411, 1992.
+
+\bibitem{bento2026}
+Bernardo Vale dos~Santos Bento.
+\newblock Resolu{\c{c}}{\~a}o do problema do caixeiro viajante com
+  heur{\'i}sticas construtivas.
+\newblock Relat{\'o}rio T{\'e}cnico de Pesquisa, Reposit{\'o}rio
+  Heuristicas-TSP, 2026.
+
+\bibitem{cerny1985}
+Vladim{\'i}r {\v{C}}ern{\'y}.
+\newblock Thermodynamical approach to the traveling salesman problem: An
+  efficient simulation algorithm.
+\newblock {\em Journal of Optimization Theory and Applications}, 45(1):41--51,
+  1985.
+
+\bibitem{croes1958}
+Georges~A. Croes.
+\newblock A method for solving traveling-salesman problems.
+\newblock {\em Operations Research}, 6(6):791--812, 1958.
+
+\bibitem{johnson1997}
+David~S. Johnson and Lyle~A. McGeoch.
+\newblock The traveling salesman problem: A case study in local optimization.
+\newblock In Emile H.~L. Aarts and Jan~Karel Lenstra, editors, {\em Local
+  Search in Combinatorial Optimization}, pages 215--310. John Wiley \& Sons,
+  Chichester, UK, 1997.
+
+\bibitem{kirkpatrick1983}
+Scott Kirkpatrick, C.~Daniel Gelatt, and Mario~P. Vecchi.
+\newblock Optimization by simulated annealing.
+\newblock {\em Science}, 220(4598):671--680, 1983.
+
+\bibitem{lin1965}
+Shen Lin.
+\newblock Computer solutions of the traveling salesman problem.
+\newblock {\em Bell System Technical Journal}, 44(10):2245--2269, 1965.
+
+\bibitem{reinelt1991}
+Gerhard Reinelt.
+\newblock {TSPLIB}---a traveling salesman problem library.
+\newblock {\em ORSA Journal on Computing}, 3(4):376--384, 1991.
+
+\bibitem{rosenkrantz1977}
+Daniel~J. Rosenkrantz, Richard~E. Stearns, and Philip~M. Lewis.
+\newblock An analysis of several heuristics for the traveling salesman problem.
+\newblock {\em SIAM Journal on Computing}, 6(3):563--581, 1977.
+
+\end{thebibliography}

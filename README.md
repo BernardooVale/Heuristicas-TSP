@@ -3,6 +3,7 @@
 
 > **Quick Navigation / Navegação Rápida:**
 > - [🇧🇷 Versão em Português](#-relatório-técnico-resolução-do-caixeiro-viajante-tsp-com-heurísticas-construtivas)
+> - [🔬 Relatório de Metaheurísticas (SA & 2-Opt)](relatorio_metaheuristicas.md)
 > - [🇺🇸 English Version](#-technical-report-traveling-salesman-problem-tsp-constructive-heuristics)
 
 ---

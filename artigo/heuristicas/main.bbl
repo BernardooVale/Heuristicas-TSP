@@ -1,0 +1,13 @@
+\begin{thebibliography}{1}
+
+\bibitem{bentley1992}
+Jon~Louis Bentley.
+\newblock Fast algorithms for geometric traveling salesman problems.
+\newblock {\em ORSA Journal on Computing}, 4(4):387--411, 1992.
+
+\bibitem{rosenkrantz1977}
+Daniel~J. Rosenkrantz, Richard~E. Stearns, and Philip~M. Lewis.
+\newblock An analysis of several heuristics for the traveling salesman problem.
+\newblock {\em SIAM Journal on Computing}, 6(3):563--581, 1977.
+
+\end{thebibliography}
