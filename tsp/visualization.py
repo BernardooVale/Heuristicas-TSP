@@ -47,6 +47,11 @@ def plot_box_candle_with_mean(df: pd.DataFrame, metric: str, ylabel: str, title:
     plt.grid(True, linestyle=":", alpha=0.6)
     plt.legend(loc="upper right", frameon=True)
     plt.xticks(rotation=20, ha="right")
+    x_span = max(x) - min(x)
+    y_span = max(y) - min(y)
+    plt.xlim(min(x) - 0.04 * x_span, max(x) + 0.16 * x_span)
+    plt.ylim(min(y) - 0.05 * y_span, max(y) + 0.12 * y_span)
+
     plt.tight_layout()
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -85,14 +90,31 @@ def plot_pareto_front(df_summary: pd.DataFrame, output_path: str):
     for xi, yi, lab, is_p in zip(x, y, labels, pareto_mask):
         weight = "bold" if is_p else "normal"
         color = "#990000" if is_p else "#1D3557"
-        plt.annotate(f" {lab}", (xi, yi), textcoords="offset points", xytext=(6, 4),
-                     fontsize=10, fontweight=weight, color=color)
+        plt.annotate(
+            f"  {lab}",
+            (xi, yi),
+            textcoords="offset points",
+            xytext=(8, 6),
+            rotation=35,
+            rotation_mode="anchor",
+            ha="left",
+            va="bottom",
+            fontsize=9.5,
+            fontweight=weight,
+            color=color,
+            zorder=7,
+        )
 
     plt.title("Análise Multiobjetivo: Qualidade da Rota vs Tempo de Execução", fontsize=13, fontweight="bold")
     plt.xlabel("Custo Médio Relativo (Normalizado pela melhor heurística da instância)", fontsize=11, fontweight="bold")
     plt.ylabel("Tempo Médio de Execução (ms)", fontsize=11, fontweight="bold")
     plt.grid(True, linestyle=":", alpha=0.6)
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper right", frameon=True, framealpha=0.95)
+    x_span = max(x) - min(x)
+    y_span = max(y) - min(y)
+    plt.xlim(min(x) - 0.04 * x_span, max(x) + 0.16 * x_span)
+    plt.ylim(min(y) - 0.05 * y_span, max(y) + 0.12 * y_span)
+
     plt.tight_layout()
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

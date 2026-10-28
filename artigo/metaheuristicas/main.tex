@@ -13,8 +13,6 @@
 \usepackage{hyperref}
 \usepackage{geometry}
 \usepackage{float}
-\usepackage{algorithm}
-\usepackage{algpseudocode}
 
 % Caminhos de busca para gráficos e figuras
 \graphicspath{{../../graficos/metaheuristicas/}{graficos/metaheuristicas/}{../../graficos/}{graficos/}}
@@ -30,7 +28,7 @@
 \maketitle
 
 \begin{abstract}
-Este trabalho expande a investigação experimental sobre métodos de resolução aproximada para o Problema do Caixeiro Viajante (\textit{Traveling Salesman Problem} --- TSP), avaliando o impacto de técnicas de busca local e metaheurísticas estocásticas em contraste com heurísticas puramente construtivas. Implementou-se um módulo algorítmico contemplando a Busca Local 2-Opt clássica acelerada por \textit{Don't-Look Bits} com avaliação de ganhos em $\mathcal{O}(1)$, bem como o \textit{Simulated Annealing} (SA) com resfriamento geométrico e perturbações 2-opt. Avaliaram-se empiricamente duas hipóteses centrais de partida propostas na literatura por Johnson e McGeoch (1997): inicialização por permutação puramente aleatória (\textit{Random Start}) e inicialização informada (\textit{Warm Start / Low-Temperature Start}) a partir da melhor rota construtiva. O desempenho computacional e a qualidade das soluções foram aferidos sobre 21 instâncias \textit{benchmark} da TSPLIB e confrontados diretamente com as duas melhores heurísticas construtivas identificadas na etapa anterior deste projeto: \textit{Farthest Insertion} (H5) e \textit{Centroid-Based Insertion} (H1). Os resultados evidenciam que a busca local 2-opt pura a partir de rotas aleatórias converge precocemente para mínimos locais de baixa qualidade (custo relativo médio de $1{,}261\times$). Em contrapartida, a combinação de inicialização construtiva com refinamento 2-opt produz uma melhoria imediata sobre o H5 original, atingindo $1{,}026\times$ em apenas $7{,}71\,\mathrm{ms}$. No topo da acurácia global, o \textit{Simulated Annealing} com partida aleatória atinge a maior qualidade do estudo ($1{,}005\times$), demandando em média $1{,}74\,\mathrm{s}$, enquanto sua variante com \textit{Low-Temperature Start} converge $4{,}2$ vezes mais rápido ($411{,}84\,\mathrm{ms}$) com perda residual mínima de qualidade ($1{,}015\times$).
+Este trabalho expande a investigação experimental sobre métodos de resolução aproximada para o Problema do Caixeiro Viajante (\textit{Traveling Salesman Problem} --- TSP), avaliando o impacto de técnicas de busca local e metaheurísticas estocásticas em contraste com heurísticas puramente construtivas. Implementou-se a Busca Local 2-Opt clássica acelerada por \textit{Don't-Look Bits} com avaliação de ganhos em $\mathcal{O}(1)$, bem como a metaheurística \textit{Simulated Annealing} (SA) com resfriamento geométrico e perturbações 2-opt. Avaliaram-se empiricamente duas hipóteses de partida: inicialização por permutação puramente aleatória (\textit{Random Start}) e inicialização informada (\textit{Warm Start / Low-Temperature Start}) a partir da melhor rota construtiva. O desempenho computacional e a qualidade das soluções foram aferidos sobre 21 instâncias \textit{benchmark} da TSPLIB e confrontados diretamente com as duas melhores heurísticas construtivas identificadas na etapa anterior deste projeto: \textit{Farthest Insertion} (H5) e \textit{Centroid-Based Insertion} (H1). Os resultados evidenciam que a busca local 2-opt pura a partir de rotas aleatórias converge precocemente para mínimos locais de baixa qualidade (custo relativo médio de $1{,}261\times$). Em contrapartida, a combinação de inicialização construtiva com refinamento 2-opt produz uma melhoria imediata sobre o H5 original, atingindo $1{,}026\times$ em apenas $7{,}71\,\mathrm{ms}$. No topo da acurácia global, o \textit{Simulated Annealing} com partida aleatória atinge a maior qualidade do estudo ($1{,}005\times$), demandando em média $1{,}74\,\mathrm{s}$, enquanto sua variante com \textit{Low-Temperature Start} converge $4{,}2$ vezes mais rápido ($411{,}84\,\mathrm{ms}$) com perda residual mínima de qualidade ($1{,}015\times$).
 \end{abstract}
 
 % -------------------------------------------------------
@@ -41,29 +39,17 @@ O Problema do Caixeiro Viajante (\textit{Traveling Salesman Problem} --- TSP) é
 
 \subsection{Contextualização com o Estudo Anterior de Heurísticas Construtivas}
 
-Na fase preliminar deste projeto \cite{bento2026}, desenvolveu-se uma suíte experimental voltada à concepção e avaliação de seis heurísticas puramente construtivas sobre 21 instâncias padronizadas da biblioteca TSPLIB \cite{reinelt1991}. Foram investigadas três abordagens clássicas da literatura --- \textit{Nearest Neighbor} (H4) \cite{rosenkrantz1977}, \textit{Farthest Insertion} (H5) \cite{rosenkrantz1977} e \textit{Greedy Edge} (H6) \cite{bentley1992} --- e três heurísticas autorais baseadas em inserção mais barata (\textit{Cheapest Insertion}) com priorização espacial: \textit{Centroid-Based Insertion} (H1), \textit{Eccentricity Insertion} (H2) e \textit{Hybrid-Score Insertion} (H3).
+Na fase preliminar deste projeto \cite{bento2026}, desenvolveu-se uma suíte experimental voltada à concepção e avaliação de seis heurísticas puramente construtivas sobre 21 instâncias padronizadas da biblioteca TSPLIB \cite{reinelt1991}. Foram investigadas abordagens clássicas da literatura --- \textit{Nearest Neighbor} (H4) \cite{rosenkrantz1977}, \textit{Farthest Insertion} (H5) \cite{rosenkrantz1977} e \textit{Greedy Edge} (H6) \cite{bentley1992} --- e heurísticas autorais baseadas em inserção mais barata (\textit{Cheapest Insertion}) com priorização espacial: \textit{Centroid-Based Insertion} (H1), \textit{Eccentricity Insertion} (H2) e \textit{Hybrid-Score Insertion} (H3).
 
-Daquele processo experimental, destacaram-se com nitidez duas soluções superiores:
-\begin{enumerate}
-    \item \textbf{H5 --- \textit{Farthest Insertion}}: Consolidou-se como a heurística de \textbf{maior qualidade absoluta de solução} entre todas as abordagens construtivas avaliadas, alcançando custo médio absoluto de $35.429$ e um custo médio relativo de $1{,}002$ no benchmark das construtivas, operando com tempo médio de processamento de $5{,}99\,\mathrm{ms}$.
-    \item \textbf{H1 --- \textit{Centroid-Based Insertion}}: Desenvolvida pelo autor com base na distância geométrica dos vértices ao baricentro do grafo, destacou-se por estabelecer o \textbf{melhor equilíbrio de custo-benefício} global na Fronteira de Pareto. Operou com custo médio de $36.292$ (apenas $\approx 3{,}6\%$ acima de H5), porém consumindo quase a metade do tempo computacional ($3{,}33\,\mathrm{ms}$).
-\end{enumerate}
+Daquele processo experimental, destacaram-se com nitidez duas soluções superiores. Em primeiro lugar, a heurística \textbf{H5 (\textit{Farthest Insertion})} consolidou-se como a abordagem de maior qualidade absoluta de solução entre todas as construtivas avaliadas, alcançando custo médio absoluto de $35.429$ e um custo médio relativo de $1{,}002$ no benchmark das construtivas, com tempo médio de processamento de $5{,}99\,\mathrm{ms}$. Em segundo lugar, a heurística autoral \textbf{H1 (\textit{Centroid-Based Insertion})}, concebida com base na distância geométrica dos vértices ao baricentro do grafo, estabeleceu o melhor equilíbrio de custo-benefício global na Fronteira de Pareto, operando com custo médio de $36.292$ (apenas cerca de $3{,}6\%$ acima de H5) e consumindo praticamente metade do tempo computacional ($3{,}33\,\mathrm{ms}$).
 
 \subsection{Motivação para a Expansão com Metaheurísticas e Busca Local}
 
-A despeito da velocidade das heurísticas construtivas, sua própria natureza gulosa impõe uma limitação estrutural intrínseca: cada decisão de inserção de aresta é tomada de maneira míope com base no estado parcial do circuito, sem a prerrogativa de revisão de arestas passadas. Consequentemente, à medida que a rota se fecha, vértices remanescentes acabam sendo absorvidos através de arestas subótimas que geram cruzamentos severos e distorções topológicas no plano euclidiano.
+A despeito da velocidade das heurísticas construtivas, sua própria natureza gulosa impõe uma limitação estrutural intrínseca: cada decisão de inserção de aresta é tomada de maneira míope com base no estado parcial do circuito, sem a possibilidade de revisão de arestas adicionadas em iterações anteriores. Consequentemente, à medida que a rota se fecha, vértices remanescentes acabam sendo absorvidos através de arestas subótimas que geram cruzamentos severos e distorções topológicas no plano euclidiano.
 
-Para superar essa barreira estática, a presente fase do projeto expande o arcabouço metodológico para abranger técnicas de pós-otimização, busca local iterativa e metaheurísticas estocásticas, tomando como base os fundamentos teóricos consolidados por David S. Johnson e Lyle A. McGeoch em seu estudo clássico \cite{johnson1997}. Em particular, investigam-se duas famílias metodológicas:
-\begin{itemize}
-    \item \textbf{Busca Local 2-Opt Clássica} \cite{croes1958, lin1965}: Algoritmo de descida estrita com poda por \textit{Don't-Look Bits} \cite{bentley1992} e avaliação analítica da variação de custo em tempo constante $\mathcal{O}(1)$.
-    \item \textbf{Simulated Annealing (SA)} \cite{kirkpatrick1983, cerny1985}: Metaheurística inspirada na termodinâmica estatística que aceita estocasticamente movimentos de piora sob o critério de Metropolis para escapar de mínimos locais rasos.
-\end{itemize}
+Para superar essa barreira estática, a presente fase do projeto expande o arcabouço metodológico para abranger técnicas de pós-otimização, busca local iterativa e metaheurísticas estocásticas, tomando como base os fundamentos teóricos consolidados por David S. Johnson e Lyle A. McGeoch em seu estudo clássico \cite{johnson1997}. Em particular, investigam-se duas famílias metodológicas: a \textbf{Busca Local 2-Opt Clássica} \cite{croes1958, lin1965}, um algoritmo de descida estrita com poda de arestas via \textit{Don't-Look Bits} \cite{bentley1992} e avaliação analítica da variação de custo em tempo constante $\mathcal{O}(1)$, e a metaheurística \textbf{Simulated Annealing (SA)} \cite{kirkpatrick1983, cerny1985}, inspirada na termodinâmica estatística, que aceita estocasticamente movimentos de piora sob o critério de Metropolis para escapar de mínimos locais rasos.
 
-Além do confronto conceitual entre as metaheurísticas e as heurísticas construtivas de referência, este estudo dedica atenção especial ao teste sistemático de duas hipóteses de partida:
-\begin{itemize}
-    \item \textbf{Hipótese A (\textit{Random Start})}: A busca local ou metaheurística parte de uma permutação puramente aleatória das cidades, sem qualquer conhecimento espacial prévio.
-    \item \textbf{Hipótese B (\textit{Warm Start / Low-Temperature Start})}: A busca parte da rota estruturada gerada pela melhor heurística construtiva prévia (H5 --- \textit{Farthest Insertion}), explorando o refinamento cirúrgico de arestas.
-\end{itemize}
+Além do confronto conceitual entre as metaheurísticas e as heurísticas construtivas de referência, este estudo dedica atenção especial ao teste sistemático de duas hipóteses de partida. Na primeira hipótese, denominada \textbf{Partida Aleatória (\textit{Random Start})}, a busca local ou metaheurística parte de uma permutação puramente aleatória das cidades, sem qualquer conhecimento espacial prévio. Na segunda hipótese, denominada \textbf{Partida Informada (\textit{Warm Start / Low-Temperature Start})}, a busca parte da rota estruturada gerada pela melhor heurística construtiva prévia (H5 --- \textit{Farthest Insertion}), explorando o refinamento cirúrgico de arestas.
 
 % -------------------------------------------------------
 \section{Modelagem Matemática e Métricas de Avaliação}
@@ -76,44 +62,27 @@ Considera-se um grafo completo não direcionado $G = (V, E)$, onde $V = \{1, 2, 
     C(\pi) = d(\pi_n, \pi_1) + \sum_{i=1}^{n-1} d(\pi_i, \pi_{i+1})
 \end{equation}
 
-O cômputo das distâncias segue estritamente as especificações da TSPLIB \cite{reinelt1991}:
-\begin{enumerate}
-    \item \textbf{Distância Pseudo-Euclidiana (\texttt{ATT})}: Aplicada à instância \texttt{att48.tsp}:
-          \begin{equation}
-              \Delta x = x_i - x_j, \qquad \Delta y = y_i - y_j
-          \end{equation}
-          \begin{equation}
-              r_{ij} = \sqrt{\frac{\Delta x^2 + \Delta y^2}{10{,}0}}, \qquad t_{ij} = \mathrm{nint}(r_{ij})
-          \end{equation}
-          \begin{equation}
-              d_{ij} = \begin{cases} t_{ij} + 1, & \text{se } t_{ij} < r_{ij} \\ t_{ij}, & \text{caso contrário} \end{cases}
-          \end{equation}
-          onde $\mathrm{nint}(z) = \lfloor z + 0{,}5 \rfloor$.
-    \item \textbf{Distância Euclidiana Bidimensional (\texttt{EUC\_2D})}: Aplicada às demais 20 instâncias:
-          \begin{equation}
-              d_{ij} = \mathrm{nint}\left(\sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}\right)
-          \end{equation}
-\end{enumerate}
+O cômputo das distâncias segue estritamente as especificações da TSPLIB \cite{reinelt1991}. Para a instância \texttt{att48.tsp}, emprega-se a \textbf{Distância Pseudo-Euclidiana (\texttt{ATT})}, calculada a partir de $\Delta x = x_i - x_j$ e $\Delta y = y_i - y_j$, obtendo-se o raio normalizado $r_{ij} = \sqrt{(\Delta x^2 + \Delta y^2)/10{,}0}$, sua aproximação inteira $t_{ij} = \mathrm{nint}(r_{ij})$ com $\mathrm{nint}(z) = \lfloor z + 0{,}5 \rfloor$, e definindo-se a distância inteira como $d_{ij} = t_{ij} + 1$ caso $t_{ij} < r_{ij}$, ou $d_{ij} = t_{ij}$ caso contrário. Para as demais vinte instâncias do conjunto de testes, aplica-se a \textbf{Distância Euclidiana Bidimensional (\texttt{EUC\_2D})}, dada diretamente por $d_{ij} = \mathrm{nint}\left(\sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}\right)$.
 
 \subsection{Métricas de Avaliação de Desempenho}
 
-Para avaliar as abordagens de maneira homogênea e livre de distorções de escala entre instâncias que variam de 48 a 200 vértices, estabelecem-se as seguintes métricas sobre o conjunto $\mathcal{I} = \{\mathcal{I}_1, \dots, \mathcal{I}_{21}\}$:
+Para avaliar as abordagens de maneira homogênea e livre de distorções de escala entre instâncias que variam de 48 a 200 vértices, estabelecem-se métricas consolidadas sobre o conjunto $\mathcal{I} = \{\mathcal{I}_1, \dots, \mathcal{I}_{21}\}$.
 
-\paragraph{Custo Médio Absoluto.} Média aritmética dos custos obtidos pelo método $m$ sobre as 21 instâncias:
+O \textbf{Custo Médio Absoluto} corresponde à média aritmética dos comprimentos dos circuitos obtidos pelo método $m$ sobre as 21 instâncias avaliadas:
 \begin{equation}
     \overline{C}(m) = \frac{1}{21} \sum_{i=1}^{21} C(m, \mathcal{I}_i)
 \end{equation}
 
-\paragraph{Custo Relativo e Custo Médio Relativo.} Para cada instância $\mathcal{I}_i$, o \textbf{Custo Relativo} de um método $m$ é normalizado pelo menor custo encontrado entre todas as alternativas concorrentes testadas naquele grafo:
+Para cada instância $\mathcal{I}_i$, define-se o \textbf{Custo Relativo} de um método $m$ normalizado pelo menor custo encontrado entre todas as alternativas concorrentes testadas naquele grafo:
 \begin{equation}
     \mathrm{CR}(m, \mathcal{I}_i) = \frac{C(m, \mathcal{I}_i)}{\displaystyle\min_{m' \in \mathcal{M}} C(m', \mathcal{I}_i)}
 \end{equation}
-onde $\mathcal{M}$ denota o conjunto composto pelas heurísticas construtivas de topo e as metaheurísticas avaliadas. Por definição, $\mathrm{CR}(m, \mathcal{I}_i) \ge 1{,}000$, atingindo $1{,}000$ exclusivamente quando $m$ fornece a melhor rota da instância. O \textbf{Custo Médio Relativo} sintetiza o comportamento geral:
+onde $\mathcal{M}$ denota o conjunto composto pelas heurísticas construtivas de topo e as metaheurísticas avaliadas. Por definição, $\mathrm{CR}(m, \mathcal{I}_i) \ge 1{,}000$, atingindo $1{,}000$ exclusivamente quando o método $m$ fornece a melhor rota daquela instância. O \textbf{Custo Médio Relativo} sintetiza o comportamento geral:
 \begin{equation}
     \overline{\mathrm{CR}}(m) = \frac{1}{21} \sum_{i=1}^{21} \mathrm{CR}(m, \mathcal{I}_i)
 \end{equation}
 
-\paragraph{Tempo Computacional Médio.} Tempo de execução em milissegundos ($ms$) medido com temporizadores de alta precisão via \texttt{time.perf\_counter()}, agregado pela média aritmética $\overline{T}(m)$.
+Por fim, o \textbf{Tempo Computacional Médio} representa o tempo de execução em milissegundos ($ms$) medido com temporizadores de alta precisão via \texttt{time.perf\_counter()}, agregado pela média aritmética $\overline{T}(m)$.
 
 % -------------------------------------------------------
 \section{Fundamentos e Modelagem das Metaheurísticas e Busca Local}
@@ -127,9 +96,9 @@ O movimento de troca 2-opt, introduzido por Croes \cite{croes1958} e popularizad
     \text{Após o movimento 2-opt:} &\quad (\dots, u_1) \to (v_1 \to \dots \to u_2) \to (v_2, \dots)
 \end{align}
 
-Em instâncias euclidianas planas ($EUC\_2D$), o operador 2-opt possui a propriedade geométrica cardeal de \textbf{desfazer cruzamentos de arestas}: pela desigualdade triangular, se duas arestas se cruzam no plano, a soma de suas extensões é estritamente maior do que a soma das arestas desconectadas e reconectadas pelo movimento 2-opt correspondente.
+Em instâncias euclidianas planas ($EUC\_2D$), o operador 2-opt possui a propriedade geométrica cardeal de desfazer cruzamentos de arestas. Pela desigualdade triangular, se duas arestas se cruzam no plano, a soma de suas extensões é estritamente maior do que a soma das arestas desconectadas e reconectadas pelo movimento 2-opt correspondente.
 
-Para conferir viabilidade computacional à exploração de vizinhança, a variação de custo $\Delta$ é avaliada estritamente em tempo $\mathcal{O}(1)$, sem a necessidade de percorrer o vetor da rota em $\mathcal{O}(n)$:
+Para conferir viabilidade computacional à exploração de vizinhança, a variação de custo $\Delta$ é avaliada estritamente em tempo constante $\mathcal{O}(1)$, sem a necessidade de percorrer o vetor da rota em $\mathcal{O}(n)$:
 \begin{equation}
     \Delta(u_1, u_2, v_1, v_2) = \left[ d(u_1, v_1) + d(u_2, v_2) \right] - \left[ d(u_1, u_2) + d(v_1, v_2) \right]
     \label{eq:delta_2opt}
@@ -138,122 +107,25 @@ Um movimento é considerado estritamente melhorante se $\Delta < 0$, permitindo 
 
 \subsection{Busca Local 2-Opt Clássica Acelerada com Don't-Look Bits}
 
-A busca local sistemática clássica baseia-se na estratégia do primeiro aperfeiçoamento (\textit{first-improvement}) ou melhor aperfeiçoamento (\textit{best-improvement}) sobre todos os pares de arestas. Entretanto, uma varredura exaustiva requer inspecionar $\binom{n}{2} \approx \frac{n^2}{2}$ pares a cada iteração, tornando o algoritmo proibitivamente lento caso muitas iterações consecutivas sejam improdutivas.
+A busca local sistemática clássica baseia-se na estratégia do primeiro aperfeiçoamento (\textit{first-improvement}) sobre todos os pares de arestas. Entretanto, uma varredura exaustiva requer inspecionar $\binom{n}{2} \approx \frac{n^2}{2}$ pares a cada iteração, tornando o algoritmo proibitivamente lento caso muitas iterações consecutivas sejam improdutivas.
 
-Para mitigar esse gargalo, implementou-se a técnica dos \textbf{\textit{Don't-Look Bits}} proposta por Bentley \cite{bentley1992} e descrita por Johnson e McGeoch \cite{johnson1997}:
-\begin{enumerate}
-    \item Cada vértice $i \in \{0, \dots, n-1\}$ possui uma flag booleana associada $\mathrm{dont\_look}[i]$, inicializada com $\mathrm{False}$.
-    \item Durante a varredura, se $\mathrm{dont\_look}[i] == \mathrm{True}$, a busca de trocas envolvendo arestas incidentes a $i$ é sumariamente omitida.
-    \item Se a inspeção da vizinhança completa de $i$ não produzir nenhum movimento com $\Delta < 0$, o bit é setado para $\mathrm{dont\_look}[i] = \mathrm{True}$.
-    \item Quando um movimento bem-sucedido é executado sobre os índices $i$ e $k$, reativam-se imediatamente os bits das cidades modificadas e de seus predecessores e sucessores imediatos na rota:
-          \begin{equation}
-              \mathrm{dont\_look}[i] = \mathrm{dont\_look}[k] = \mathrm{dont\_look}[i-1] = \mathrm{dont\_look}[k+1] = \mathrm{False}
-          \end{equation}
-    \item O algoritmo atinge convergência e encerra quando todos os bits tornam-se $\mathrm{True}$, assegurando que a rota alcançou um \textbf{mínimo 2-ótimo estrito} (nenhuma troca de duas arestas é capaz de reduzi-la).
-\end{enumerate}
-
-O Algoritmo~\ref{alg:2opt} sintetiza o funcionamento da busca local acelerada.
-
-\begin{algorithm}[H]
-\caption{Busca Local 2-Opt Acelerada com \textit{Don't-Look Bits}}
-\label{alg:2opt}
-\begin{algorithmic}[1]
-\Require Circuito inicial $\pi$, Instância $G$, Limite de iterações $I_{\max}$
-\Ensure Circuito 2-ótimo $\pi^*$, Custo final $C^*$
-\State $n \gets |\pi|$; $\mathrm{dont\_look} \gets [\mathrm{False}, \dots, \mathrm{False}]$
-\State $C^* \gets \mathrm{CalcularCusto}(\pi, G)$; $\pi^* \gets \pi$
-\State $\mathrm{melhorou} \gets \mathrm{True}$; $\mathrm{iter} \gets 0$
-\While{$\mathrm{melhorou}$ \textbf{e} $\mathrm{iter} < I_{\max}$}
-    \State $\mathrm{melhorou} \gets \mathrm{False}$; $\mathrm{iter} \gets \mathrm{iter} + 1$
-    \For{$i = 0$ \textbf{até} $n-1$}
-        \If{$\mathrm{dont\_look}[i] == \mathrm{True}$}
-            \State \textbf{continue}
-        \EndIf
-        \State $\mathrm{cidade\_melhorou} \gets \mathrm{False}$
-        \For{$k = i+2$ \textbf{até} $(i == 0 \,?\, n-2 : n-1)$}
-            \State $\Delta \gets \mathrm{AvaliarDelta2Opt}(\pi^*, i, k, G)$ \Comment{Via Equação~\ref{eq:delta_2opt} em $\mathcal{O}(1)$}
-            \If{$\Delta < 0$}
-                \State $\pi^* \gets \mathrm{InverterSubcaminho}(\pi^*, i, k)$
-                \State $C^* \gets C^* + \Delta$
-                \State $\mathrm{melhorou} \gets \mathrm{True}$; $\mathrm{cidade\_melhorou} \gets \mathrm{True}$
-                \State Reativar bits de $i, k, (i-1) \pmod n, (k+1) \pmod n$
-                \State \textbf{break}
-            \EndIf
-        \EndFor
-        \If{\textbf{não} $\mathrm{cidade\_melhorou}$}
-            \State $\mathrm{dont\_look}[i] \gets \mathrm{True}$
-        \EndIf
-    \EndFor
-\EndWhile
-\State \Return $\pi^*, C^*$
-\end{algorithmic}
-\end{algorithm}
+Para mitigar esse gargalo, implementou-se a técnica dos \textit{Don't-Look Bits} proposta por Bentley \cite{bentley1992} e descrita por Johnson e McGeoch \cite{johnson1997}. Cada vértice $i$ do grafo mantém uma flag booleana associada, inicialmente desativada. Durante a varredura, se a flag do vértice estiver ativa, as tentativas de inversão envolvendo arestas incidentes a esse nó são sumariamente ignoradas. Caso a inspeção da vizinhança completa de uma cidade não encontre nenhuma troca melhorante, seu bit é ativado. Quando uma troca bem-sucedida é concretizada, o circuito tem seu subcaminho invertido e os bits das cidades modificadas e de seus vizinhos imediatos na rota são reativados para permitir novas inspeções. O processo repete-se em passadas sucessivas até que todos os bits tornem-se ativos, garantindo que o circuito atingiu um mínimo 2-ótimo estrito, no qual nenhum par de arestas pode ser trocado com ganho de custo.
 
 \subsection{Simulated Annealing (SA) Estocástico}
 
 O \textit{Simulated Annealing} transpõe para a otimização combinatória a termodinâmica estatística do recozimento de metais: a altas temperaturas, partículas atômicas movem-se desordenadamente; à medida que o sistema é resfriado lentamente, os átomos acomodam-se em uma rede cristalina de energia mínima global.
 
-\paragraph{Critério de Aceitação de Metropolis.} A cada iteração sobre o estado corrente $\pi$ com custo $C$, gera-se um estado vizinho $\pi'$ com custo $C'$ por perturbação 2-opt ($\Delta = C' - C$):
-\begin{itemize}
-    \item Se $\Delta \le 0$: o novo estado é \textbf{sempre aceito} ($\pi \leftarrow \pi'$).
-    \item Se $\Delta > 0$: o movimento de piora é \textbf{aceito estocasticamente} com probabilidade governada pelo parâmetro de temperatura $T$:
-          \begin{equation}
-              P(\text{aceitar}) = \exp\left(-\frac{\Delta}{T}\right)
-          \end{equation}
-\end{itemize}
-Gera-se um número pseudorrandômico $r \sim \mathcal{U}(0,1)$; se $r < P(\text{aceitar})$, o estado degradado é incorporado. Esse mecanismo confere ao SA a habilidade fundamental de escapar de vales e bacias de atração de mínimos locais rasos.
+A cada iteração sobre o estado corrente $\pi$ com custo $C$, sorteia-se um par de cortes aleatórios para gerar um circuito vizinho $\pi'$ com variação de custo $\Delta = C' - C$, calculada em $\mathcal{O}(1)$. Se $\Delta \le 0$, o novo circuito é prontamente aceito. Caso o movimento resulte em degradação ($\Delta > 0$), a troca é aceita estocasticamente segundo o critério de Metropolis com probabilidade $P(\text{aceitar}) = \exp(-\Delta / T)$, comparada a um sorteio uniforme em $[0, 1)$. Esse mecanismo confere ao algoritmo a capacidade de escapar de bacias de atração de mínimos locais rasos.
 
-\paragraph{Esquema de Resfriamento e Parâmetros Térmicos.}
-\begin{enumerate}
-    \item \textbf{Resfriamento Geométrico}: A temperatura evolui a cada patamar por:
-          \begin{equation}
-              T_{k+1} = \alpha \cdot T_k, \quad \text{com } \alpha \in [0{,}95, 0{,}98]
-          \end{equation}
-    \item \textbf{Esforço por Patamar Térmico}: Executam-se $L = \max(100, 5 \cdot n)$ tentativas de movimentos 2-opt a cada valor de temperatura antes de proceder ao resfriamento.
-    \item \textbf{Calibração Térmica no \textit{Random Start}}: Para evitar comportamentos erráticos no início da busca quando a rota inicial é aleatória, a temperatura inicial $T_0$ é estimada via amostragem preliminar de movimentos melhorantes e degradantes, calculando o $\overline{\Delta^+}$ médio de modo que a taxa inicial de aceitação de movimentos de piora seja de aproximadamente $80\%$:
-          \begin{equation}
-              T_0 = -\frac{\overline{\Delta^+}}{\ln(0{,}80)}
-          \end{equation}
-    \item \textbf{Critério de Parada}: O algoritmo finaliza quando a temperatura atinge o limiar inferior $T_{\mathrm{final}} = 10^{-3}$. Ao longo de toda a execução, preserva-se de forma elitista a melhor rota global encontrada $\pi_{\mathrm{best}}$.
-\end{enumerate}
-
-O Algoritmo~\ref{alg:sa} descreve a metaheurística implementada.
-
-\begin{algorithm}[H]
-\caption{Simulated Annealing com Vizinhança 2-Opt}
-\label{alg:sa}
-\begin{algorithmic}[1]
-\Require Instância $G$, Rota inicial $\pi_0$, Fator de resfriamento $\alpha$, Limiar térmico $T_{\mathrm{final}}$
-\Ensure Melhor circuito global $\pi_{\mathrm{best}}$
-\State $\pi \gets \pi_0$; $C \gets \mathrm{CalcularCusto}(\pi, G)$
-\State $\pi_{\mathrm{best}} \gets \pi$; $C_{\mathrm{best}} \gets C$
-\State $T \gets \mathrm{EstimarTemperaturaInicial}(\pi, G, \text{taxa}=0{,}80)$
-\State $L \gets \max(100, 5 \cdot |V|)$
-\While{$T > T_{\mathrm{final}}$}
-    \For{$\mathrm{passo} = 1$ \textbf{até} $L$}
-        \State Sortear índices aleatórios de corte $i, k$
-        \State $\Delta \gets \mathrm{AvaliarDelta2Opt}(\pi, i, k, G)$ \Comment{$\mathcal{O}(1)$}
-        \If{$\Delta \le 0$ \textbf{ou} $\mathrm{Uniforme}(0,1) < \exp(-\Delta / T)$}
-            \State $\pi \gets \mathrm{InverterSubcaminho}(\pi, i, k)$
-            \State $C \gets C + \Delta$
-            \If{$C < C_{\mathrm{best}}$}
-                \State $\pi_{\mathrm{best}} \gets \pi$; $C_{\mathrm{best}} \gets C$
-            \EndIf
-        \EndIf
-    \EndFor
-    \State $T \gets \alpha \cdot T$
-\EndWhile
-\State \Return $\pi_{\mathrm{best}}$
-\end{algorithmic}
-\end{algorithm}
+O resfriamento ocorre segundo um esquema geométrico $T_{k+1} = \alpha \cdot T_k$, com fator de decaimento $\alpha \in [0{,}95, 0{,}98]$. Em cada patamar térmico, realiza-se um esforço amostral de $L = \max(100, 5 \cdot n)$ tentativas de movimentos antes de atualizar a temperatura. Quando a rota inicial é aleatória, a temperatura inicial $T_0$ é calibrada através de uma amostragem preliminar de movimentos degradantes, de modo a assegurar uma taxa inicial de aceitação de aproximadamente $80\%$ via $T_0 = -\overline{\Delta^+} / \ln(0{,}80)$. O processo de resfriamento prossegue até que a temperatura caia abaixo de $T_{\mathrm{final}} = 10^{-3}$, mantendo-se sempre o registro elitista da melhor rota global visitada.
 
 \subsection{Hipóteses de Inicialização e a Teoria de Johnson \& McGeoch}
 
-Um dos pilares metodológicos elucidados por Johnson e McGeoch \cite{johnson1997} reside na influência decisiva da solução de partida sobre o comportamento dos algoritmos de busca:
-\begin{itemize}
-    \item \textbf{Impacto no 2-Opt Puro}: Uma rota puramente aleatória possui um número maciço de cruzamentos em escala global e arestas longas de ruído. Como a busca local realiza apenas descidas gulosas, ela elimina cruzamentos evidentes de forma descoordenada, ficando precocemente aprisionada em mínimos locais extremamente fracos. Ao contrário, quando o 2-opt é iniciado a partir de uma rota construtiva de alta qualidade (\textit{Warm Start}), ele opera como um afinador pós-processador cirúrgico, mantendo a geometria global da rota e desfazendo eventuais torções remanescentes em poucas passadas.
-    \item \textbf{Impacto no Simulated Annealing}: Se o SA for submetido a uma temperatura inicial elevada a partir de uma boa heurística, o calor excessivo destrói as boas arestas previamente construídas, forçando o algoritmo a reaprender a topologia do grafo. Portanto, quando se parte da rota construtiva, a literatura dita a aplicação de um \textbf{\textit{Low-Temperature Start}}: $T_0$ reduzido ($T_0 = 50{,}0$) e resfriamento ligeiramente mais ágil ($\alpha = 0{,}95$), permitindo que o SA atue na vizinhança sem perder a macroestrutura.
-\end{itemize}
+Um dos pilares metodológicos elucidados por Johnson e McGeoch \cite{johnson1997} reside na influência decisiva da solução de partida sobre o comportamento dos algoritmos de busca.
+
+Em relação à busca local 2-opt pura, uma rota inicial aleatória apresenta uma densidade maciça de cruzamentos e arestas longas desordenadas. Como a descida gulosa elimina cruzamentos locais de modo descoordenado, o algoritmo tende a ficar rapidamente aprisionado em mínimos locais medíocres, sem conseguir reverter torções macroscópicas. Em contraste, quando o 2-opt é aplicado a partir de uma rota construtiva de alta qualidade (\textit{Warm Start}), ele atua como um refinador cirúrgico de arestas, preservando a geometria global do circuito e removendo eventuais tensões locais em poucas iterações.
+
+No caso do \textit{Simulated Annealing}, iniciar o algoritmo a altas temperaturas a partir de uma boa rota destrói as conexões estruturadas já existentes, forçando o sistema a reaprender a topologia do grafo do zero. Por essa razão, a literatura recomenda o emprego de uma inicialização em baixa temperatura (\textit{Low-Temperature Start}), adotando temperatura inicial reduzida ($T_0 = 50{,}0$) e resfriamento ligeiramente mais veloz ($\alpha = 0{,}95$). Essa configuração permite que o SA explore a vizinhança imediata da solução construtiva e refine o circuito sem desfazer a macroestrutura da rota.
 
 % -------------------------------------------------------
 \section{Heurísticas Construtivas de Referência}
@@ -263,15 +135,15 @@ Para estabelecer um referencial comparativo fidedigno, o estudo incorpora os res
 
 \subsection{H5 --- \textit{Farthest Insertion}}
 
-A heurística \textit{Farthest Insertion} \cite{rosenkrantz1977} inicia o circuito com o par de vértices mais distantes entre si. Em cada iteração subsequente, identifica o vértice $v^*$ ainda não visitado cuja distância mínima aos nós já presentes no circuito parcial é máxima:
+A heurística clássica \textit{Farthest Insertion} \cite{rosenkrantz1977} inicia o circuito com o par de vértices mais distantes entre si. Em cada iteração subsequente, identifica o vértice $v^*$ ainda não visitado cuja distância mínima aos nós já presentes no circuito parcial é máxima:
 \begin{equation}
     v^* = \arg\max_{v \notin \mathcal{T}} \left( \min_{u \in \mathcal{T}} d(v, u) \right)
 \end{equation}
-O nó selecionado é inserido entre os vértices adjacentes $(i, j)$ da rota que minimizam o aumento marginal de distância (\textit{Cheapest Insertion}):
+O nó selecionado é então inserido entre os vértices adjacentes $(i, j)$ da rota que minimizam o aumento marginal de distância (\textit{Cheapest Insertion}):
 \begin{equation}
     \Delta(i, v^*, j) = d(i, v^*) + d(v^*, j) - d(i, j)
 \end{equation}
-Essa estratégia constrói preliminarmente a envoltória externa dos nós mais isolados do grafo, internalizando os pontos mais centrais posteriormente com mínimo desvio geométrico.
+Essa estratégia constrói preliminarmente a envoltória externa formada pelos nós mais periféricos do grafo, internalizando os pontos mais centrais posteriormente com mínimo desvio geométrico.
 
 \subsection{H1 --- \textit{Centroid-Based Insertion} (Autoral)}
 
@@ -279,7 +151,7 @@ Desenvolvida originalmente no âmbito deste projeto \cite{bento2026}, a heuríst
 \begin{equation}
     \mathrm{prioridade}(v) = d(v, \mathbf{C})
 \end{equation}
-Os vértices são ordenados em ordem decrescente de distância ao centróide. A rota é iniciada com os dois nós mais periféricos e os nós subsequentes são incorporados via \textit{Cheapest Insertion}. Por calcular a métrica de prioridade em tempo $\mathcal{O}(n)$, H1 opera com velocidade computacional substancialmente superior à de H5, retendo excelente conformação de envoltória externa.
+Os vértices são ordenados em ordem decrescente de distância ao centróide, iniciando-se a rota com os dois nós mais externos e inserindo os demais nós via \textit{Cheapest Insertion}. Por calcular a métrica de prioridade em tempo linear $\mathcal{O}(n)$, H1 opera com velocidade computacional substancialmente superior à de H5, retendo excelente conformação de envoltória externa.
 
 % -------------------------------------------------------
 \section{Resultados Numéricos e Discussão Quantitativa}
@@ -342,12 +214,7 @@ A Tabela~\ref{tab:detalhe_instancias} apresenta os custos absolutos obtidos para
 \end{tabular}}
 \end{table}
 
-A inspeção dos dados experimentais revela conclusões quantitativas primordiais:
-\begin{enumerate}
-    \item \textbf{A Superioridade Global do Simulated Annealing}: O SA com inicialização aleatória atingiu a melhor solução em 14 das 21 instâncias testadas, com custo médio de apenas $0{,}55\%$ acima da fronteira ideal ($1{,}0055\times$). O SA com partida a partir de H5 obteve o melhor resultado nas outras 7 instâncias, registrando custo relativo médio de $1{,}0151\times$.
-    \item \textbf{O Refinamento Mútuo entre Construtiva e 2-Opt}: O 2-Opt iniciado com H5 melhorou ou igualou o custo da heurística H5 pura em 100\% dos testes, reduzindo o custo médio de $35.429$ para $35.067$ com um tempo adicional de processamento de apenas $2{,}15\,\mathrm{ms}$.
-    \item \textbf{O Colapso do 2-Opt Desestruturado}: Iniciar a busca local 2-opt a partir de uma permutação aleatória resultou no pior desempenho entre todos os métodos ($1{,}2611\times$ de custo relativo médio, ou seja, $26{,}1\%$ pior que a melhor solução), consumindo quase quatro vezes mais tempo ($29{,}27\,\mathrm{ms}$) do que quando iniciado a partir de H5 ($7{,}71\,\mathrm{ms}$).
-\end{enumerate}
+A inspeção dos dados experimentais revela conclusões quantitativas primordiais. O \textit{Simulated Annealing} com inicialização aleatória atingiu a melhor solução em 14 das 21 instâncias testadas, com custo médio de apenas $0{,}55\%$ acima da fronteira ideal ($1{,}0055\times$). O SA com partida informada a partir de H5 obteve a melhor marca nas outras 7 instâncias, registrando custo relativo médio de $1{,}0151\times$. Quanto ao refinamento local, o 2-Opt iniciado com H5 melhorou ou igualou o custo da heurística H5 pura em 100\% dos testes, reduzindo o custo médio de $35.429$ para $35.067$ com acréscimo temporal de apenas $2{,}15\,\mathrm{ms}$. Em contrapartida, iniciar a busca local 2-opt a partir de uma permutação puramente aleatória resultou no pior desempenho entre todos os métodos ($1{,}2611\times$ de custo relativo médio, ou seja, $26{,}1\%$ pior que a melhor solução), consumindo quase quatro vezes mais tempo ($29{,}27\,\mathrm{ms}$) do que quando iniciado a partir de H5 ($7{,}71\,\mathrm{ms}$).
 
 % -------------------------------------------------------
 \section{Análise Gráfica Detalhada}
@@ -364,12 +231,7 @@ A Figura~\ref{fig:heatmap_custo_meta} exibe a matriz de calor cruzando as 21 ins
     \label{fig:heatmap_custo_meta}
 \end{figure}
 
-A visualização matricial evidencia padrões categóricos:
-\begin{itemize}
-    \item As colunas do \textbf{SA (Random Start)} e \textbf{SA (from H5)} apresentam tonalidades predominantemente claras em toda a extensão do gráfico, confirmando a robustez em encontrar circuitos de alta fidelidade independentemente da dimensão $n$.
-    \item A coluna do \textbf{2-Opt (from H5)} exibe tonalidade visivelmente mais clara do que o H5 original e o H1, comprovando a eficácia contínua do descruzamento local.
-    \item Em contrapartida, a coluna do \textbf{2-Opt (Random Start)} apresenta coloração fortemente escura, ilustrando desvios severos (chegando a $1{,}524\times$ em \texttt{kroC100} e $1{,}477\times$ em \texttt{pr144}), provando empiricamente a incapacidade da busca local pura em desatar nós macroscópicos.
-\end{itemize}
+A visualização matricial evidencia padrões categóricos. As colunas correspondentes ao SA com partida aleatória e ao SA iniciado em H5 apresentam tonalidades predominantemente claras em toda a extensão do gráfico, confirmando a robustez de ambos os esquemas em encontrar circuitos de alta fidelidade independentemente da dimensão $n$. A coluna do 2-Opt iniciado em H5 exibe coloração consistentemente mais clara do que o H5 original e o H1, comprovando a eficácia contínua do descruzamento local. Em contrapartida, a coluna do 2-Opt com partida aleatória apresenta coloração fortemente escura, ilustrando desvios severos (chegando a $1{,}524\times$ em \texttt{kroC100} e $1{,}477\times$ em \texttt{pr144}) decorrentes do aprisionamento precoce em mínimos locais.
 
 \subsection{\textit{Heatmap} de Tempo Computacional}
 
@@ -382,12 +244,7 @@ A Figura~\ref{fig:heatmap_tempo_meta} apresenta o tempo de execução computacio
     \label{fig:heatmap_tempo_meta}
 \end{figure}
 
-O comportamento de escalabilidade temporal ressalta a hierarquia operacional dos algoritmos:
-\begin{itemize}
-    \item \textbf{Regime de Ultrabaixa Latência ($< 15\,\mathrm{ms}$)}: Compreende H1 ($0{,}46$ a $10{,}3\,\mathrm{ms}$), H5 ($0{,}83$ a $13{,}9\,\mathrm{ms}$) e 2-Opt a partir de H5 ($0{,}69$ a $27{,}0\,\mathrm{ms}$). Todos são perfeitamente adequados para aplicações interativas ou em tempo real.
-    \item \textbf{Regime Intermediário ($100$ a $900\,\mathrm{ms}$)}: O \textbf{SA (from H5)} opera integralmente abaixo de $1$ segundo (máximo de $926\,\mathrm{ms}$ em \texttt{rat195}), proporcionando uma economia temporal maciça de $76\%$ em relação ao SA aleatório.
-    \item \textbf{Regime Intensivo ($1$ a $4\,\mathrm{s}$)}: O \textbf{SA (Random Start)} atinge tempos entre $1{,}5\,\mathrm{s}$ e $4{,}0\,\mathrm{s}$ nas instâncias com $n \ge 150$, reflexo das centenas de milhares de tentativas estocásticas a altas temperaturas.
-\end{itemize}
+O comportamento de escalabilidade temporal ressalta a hierarquia operacional dos algoritmos dividida em três faixas de operação: no regime de ultrabaixa latência (abaixo de $15\,\mathrm{ms}$), situam-se H1 ($0{,}46$ a $10{,}3\,\mathrm{ms}$), H5 ($0{,}83$ a $13{,}9\,\mathrm{ms}$) e o 2-Opt a partir de H5 ($0{,}69$ a $27{,}0\,\mathrm{ms}$), sendo todos ideais para aplicações em tempo real; no regime intermediário ($100$ a $900\,\mathrm{ms}$), o SA a partir de H5 opera integralmente abaixo de um segundo (máximo de $926\,\mathrm{ms}$ em \texttt{rat195}), proporcionando uma economia temporal de $76\%$ em relação ao SA aleatório; e no regime intensivo ($1$ a $4\,\mathrm{s}$), o SA com partida aleatória atinge tempos mais elevados nas instâncias com $n \ge 150$, decorrentes da exploração térmica exaustiva.
 
 \subsection{\textit{Boxplot} de Custo Relativo}
 
@@ -400,12 +257,7 @@ A Figura~\ref{fig:boxplot_custo_meta} exibe a dispersão estatística do Custo R
     \label{fig:boxplot_custo_meta}
 \end{figure}
 
-A análise distribucional revela:
-\begin{itemize}
-    \item \textbf{SA (Random Start)} e \textbf{SA (from H5)} exibem caixas quase microscópicas com dispersão mínima em torno de $1{,}005$ e $1{,}015$, demonstrando altíssima repetibilidade e previsibilidade estatística.
-    \item \textbf{2-Opt (from H5)} apresenta caixa compacta com desvio-padrão de apenas $0{,}0157$, superando o próprio H5 puro ($0{,}0189$) e H1 ($0{,}0294$).
-    \item \textbf{2-Opt (Random Start)} apresenta uma dispersão desmedida com amplitude que vai de $1{,}087$ a $1{,}525$, evidenciando a instabilidade crítica de convergir para armadilhas locais imprevisíveis.
-\end{itemize}
+A análise distribucional mostra que tanto o SA aleatório quanto o SA com partida em H5 exibem caixas interquartis extremamente compactas, com dispersão mínima em torno de $1{,}005$ e $1{,}015$, demonstrando altíssima repetibilidade estatística. O 2-Opt iniciado em H5 também exibe caixa estreita com desvio-padrão de apenas $0{,}0157$, superando a consistência do H5 puro ($0{,}0189$) e do H1 ($0{,}0294$). Por outro lado, o 2-Opt com partida aleatória exibe ampla dispersão com valores entre $1{,}087$ e $1{,}525$, refletindo a grande instabilidade de soluções decorrentes de inicializações não estruturadas.
 
 \subsection{\textit{Boxplot} de Tempo de Execução}
 
@@ -418,11 +270,11 @@ A Figura~\ref{fig:boxplot_tempo_meta} ilustra a distribuição estatística do t
     \label{fig:boxplot_tempo_meta}
 \end{figure}
 
-O gráfico corrobora a estabilidade dos tempos das abordagens construtivas e híbridas em contraste com a dispersão inerente às metaheurísticas estocásticas, onde o número de iterações por patamar varia em função da dimensão $n$. Destaca-se ainda que o 2-Opt (from H5) apresenta mediana de apenas $4{,}48\,\mathrm{ms}$, enquanto o 2-Opt aleatório requer mediana de $18{,}8\,\mathrm{ms}$.
+O gráfico corrobora a estabilidade dos tempos das abordagens construtivas e híbridas em contraste com a maior amplitude inerente às metaheurísticas estocásticas, onde o número de iterações por patamar varia em função da dimensão $n$. Vale ressaltar que o 2-Opt a partir de H5 apresenta mediana de tempo de apenas $4{,}48\,\mathrm{ms}$, ao passo que o 2-Opt aleatório requer mediana de $18{,}8\,\mathrm{ms}$.
 
 \subsection{Fronteira de Pareto Multiobjetivo}
 
-A Figura~\ref{fig:pareto_meta} projeta todas as metodologias no espaço biobjetivo: \textbf{Minimização do Custo Médio Absoluto} $\times$ \textbf{Minimização do Tempo Médio de Execução}. A linha poligonal pontilhada conecta os pontos não dominados que compõem a Fronteira de Pareto.
+A Figura~\ref{fig:pareto_meta} projeta todas as metodologias no espaço biobjetivo relacionando a minimização do custo médio e a minimização do tempo de execução. A linha poligonal pontilhada conecta os pontos não dominados que compõem a Fronteira de Pareto.
 
 \begin{figure}[H]
     \centering
@@ -431,18 +283,7 @@ A Figura~\ref{fig:pareto_meta} projeta todas as metodologias no espaço biobjeti
     \label{fig:pareto_meta}
 \end{figure}
 
-A análise formal de dominância de Pareto identifica as soluções ótimas de acordo com a prioridade do tomador de decisão:
-\begin{enumerate}
-    \item \textbf{H1 (Centroid-Based)}: Ocupa o extremo de latência mínima na fronteira ($3{,}35\,\mathrm{ms}$, custo $36.292$). Insuperável quando a restrição de tempo de CPU for rígida na faixa de ultrabaixa latência.
-    \item \textbf{2-Opt (from H5)}: Constitui o ponto de \textbf{inflexão e máxima eficiência operacional} ($7{,}71\,\mathrm{ms}$, custo $35.067$). Com acréscimo irrisório de $4{,}36\,\mathrm{ms}$ em relação a H1, obtém uma redução drástica de mais de $1.200$ unidades no custo. \textbf{Domina estritamente a heurística H5 pura}, que se situa no interior dominado da fronteira.
-    \item \textbf{SA (from H5)}: Ponto de transição para otimização de alta precisão ($411{,}84\,\mathrm{ms}$, custo $34.692$). Reduz o custo para $1{,}015\times$ consumindo uma fração de segundo.
-    \item \textbf{SA (Random Start)}: Ocupa o extremo de máxima qualidade da fronteira ($1.738{,}87\,\mathrm{ms}$, custo $34.247$), sendo a escolha indicada quando a prioridade absoluta for a qualidade do circuito e houver orçamento computacional de 1 a 2 segundos.
-    \item \textbf{Soluções Dominadas}:
-          \begin{itemize}
-              \item \textbf{H5 (Farthest Insertion) puro} ($5{,}56\,\mathrm{ms}$, $35.429$): É dominado pelo 2-Opt (from H5), que por uma diferença ínfima de tempo ($+2{,}15\,\mathrm{ms}$) fornece rotas estritamente superiores.
-              \item \textbf{2-Opt (Random Start)} ($29{,}27\,\mathrm{ms}$, $44.007$): É \textbf{completamente dominado} por H1, H5 e 2-Opt (from H5), que são simultaneamente mais rápidos e muito mais precisos.
-          \end{itemize}
-\end{enumerate}
+A análise formal de dominância de Pareto identifica as soluções não dominadas de acordo com as preferências do projeto. A heurística H1 (\textit{Centroid-Based}) ocupa o extremo de latência mínima na fronteira ($3{,}35\,\mathrm{ms}$, custo $36.292$), sendo insuperável quando a restrição de tempo computacional é severa. O 2-Opt a partir de H5 constitui o ponto de inflexão e máxima eficiência operacional ($7{,}71\,\mathrm{ms}$, custo $35.067$), pois com um acréscimo de apenas $4{,}36\,\mathrm{ms}$ em relação a H1 obtém uma redução significativa de mais de $1.200$ unidades no custo, dominando estritamente a heurística H5 pura. O SA a partir de H5 funciona como a transição para regimes de alta precisão ($411{,}84\,\mathrm{ms}$, custo $34.692$), alcançando soluções a $1{,}5\%$ da melhor marca em fração de segundo. Finalmente, o SA com partida aleatória ocupa o extremo de máxima qualidade ($1.738{,}87\,\mathrm{ms}$, custo $34.247$), ideal quando a qualidade do circuito for o único critério relevante e houver disponibilidade de processamento. As demais configurações (H5 puro e 2-Opt aleatório) situam-se no interior dominado da fronteira.
 
 % -------------------------------------------------------
 \section{Discussão Comparativa Aprofundada}
@@ -450,39 +291,25 @@ A análise formal de dominância de Pareto identifica as soluções ótimas de a
 
 \subsection{Comparativo entre as Metaheurísticas e Busca Local}
 
-O confronto entre a Busca Local 2-Opt e o \textit{Simulated Annealing} evidencia a distinção teórica entre otimização por descida estrita e metaheurísticas estocásticas globais:
-\begin{itemize}
-    \item \textbf{A Armadilha do Espaço de Estados no 2-Opt}: A busca local 2-opt é determinística em sua regra de aceitação ($\Delta < 0$). Em um grafo com permutação aleatória, a primeira centena de trocas remove cruzamentos locais óbvios, mas ao fazê-lo, ``amarra'' sub-rotas distorcidas que exigem movimentos simultâneos de múltiplas arestas (3-opt, 4-opt ou \textit{double-bridge}) para serem desfeitas. Como o operador 2-opt é cego a trocas não sequenciais de ordem superior, a busca é bloqueada em mínimos locais estéreis.
-    \item \textbf{A Elasticidade Termodinâmica do SA}: O critério de Metropolis confere ao SA a habilidade de aceitar transitoriamente movimentos com $\Delta > 0$. Na fase inicial de alta temperatura, a barreira de energia potencial é facilmente transposta, permitindo que o algoritmo reorganize topologias inteiras de macroescala. Quando o resfriamento atinge temperaturas médias e baixas, o circuito ``cristaliza'' nas bacias de atração mais promissoras, atingindo circuitos com custo a menos de $0{,}6\%$ do melhor valor conhecido.
-\end{itemize}
+O confronto entre a Busca Local 2-Opt e o \textit{Simulated Annealing} evidencia a distinção teórica entre otimização por descida estrita e metaheurísticas estocásticas globais. A busca local 2-opt é determinística em sua regra de aceitação ($\Delta < 0$). Em um grafo com permutação aleatória, as primeiras trocas removem cruzamentos locais evidentes, mas rapidamente formam arranjos entrelaçados que exigiriam movimentos simultâneos de três ou mais arestas para serem desfeitos. Por ser incapaz de aceitar pioras temporárias, a busca é bloqueada em mínimos locais estéreis. Por outro lado, a elasticidade termodinâmica do critério de Metropolis no SA permite que perturbações desfavoráveis sejam aceitas na fase quente, possibilitando ao algoritmo escapar dessas armadilhas topológicas e reorganizar a rota em macroescala antes da convergência final.
 
 \subsection{Comparativo com as Melhores Heurísticas Construtivas (H1 e H5)}
 
-Ao comparar as metaheurísticas com as duas melhores heurísticas do ciclo anterior \cite{bento2026}, destacam-se duas constatações práticas de engenharia de software:
-\begin{enumerate}
-    \item \textbf{A Sinergia Imbatível Construtiva + Pós-Otimização Local}: O resultado mais expressivo para aplicações industriais e de tempo real é o desempenho do \textbf{2-Opt (from H5)}. A heurística construtiva H5 estabelece a envoltória convexa e posiciona os nós com inteligência geométrica global; o operador 2-opt então atua apenas na eliminação de pequenas arestas tensionadas locais deixadas pelas últimas inserções. O resultado é uma redução no custo de $35.429$ para $35.067$ em apenas $7{,}71\,\mathrm{ms}$, superando todas as heurísticas construtivas existentes na literatura.
-    \item \textbf{A Validação das Teses de Johnson \& McGeoch}: O experimento valida categoricamente os postulados do Capítulo 8 de \textit{Local Search in Combinatorial Optimization} \cite{johnson1997}:
-          \begin{itemize}
-              \item \textit{``A busca local nunca deve operar no vácuo de uma rota aleatória''}: O fracasso do 2-Opt aleatório ($1{,}261\times$ de custo relativo médio) confirma que rotas puramente aleatórias geram mínimos locais de baixíssima qualidade.
-              \item \textit{``O Low-Temperature Start poupa ordens de magnitude em esforço computacional''}: O SA inicializado com H5 sob temperatura reduzida atingiu qualidade excelente ($1{,}015\times$) convergindo em apenas $411\,\mathrm{ms}$, mais de $4$ vezes mais rápido que o SA com partida aleatória ($1.738\,\mathrm{ms}$), sem a necessidade de reaquecer o sistema para rediscutir a topologia básica.
-          \end{itemize}
-\end{enumerate}
+Ao comparar as metaheurísticas com as melhores heurísticas construtivas do ciclo anterior, sobressaem duas lições práticas essenciais.
+
+A primeira reside na sinergia entre inicialização construtiva inteligente e pós-otimização local. O resultado de maior utilidade prática para aplicações computacionais é a combinação do 2-Opt aplicado sobre o H5. A heurística construtiva estabelece previamente a conformação global e a envoltória convexa dos nós; o operador 2-opt intervém pontualmente desfazendo arestas tensionadas deixadas pelas últimas inserções, reduzindo o custo médio de $35.429$ para $35.067$ em apenas $7{,}71\,\mathrm{ms}$.
+
+A segunda lição é a confirmação empírica direta dos postulados de Johnson e McGeoch \cite{johnson1997}. Por um lado, verificou-se que a busca local não deve operar a partir de permutações aleatórias, dado o colapso de precisão observado ($1{,}261\times$ de custo relativo médio). Por outro lado, comprovou-se a eficácia do \textit{Low-Temperature Start}, no qual o SA inicializado com H5 sob temperatura branda atingiu excelente acurácia ($1{,}015\times$) convergindo em apenas $411\,\mathrm{ms}$ (mais de 4 vezes mais rápido do que a variante aleatória), dispensando o gasto computacional de reaquecimento desnecessário do sistema.
 
 % -------------------------------------------------------
-\section{Conclusões e Trabalhos Futuros}
+\section{Conclusões}
 % -------------------------------------------------------
 
-Neste relatório técnico, expandiu-se com sucesso a avaliação algorítmica do Problema do Caixeiro Viajante, incorporando a Busca Local 2-Opt acelerada por \textit{Don't-Look Bits} e a metaheurística \textit{Simulated Annealing}, ambas testadas sob as hipóteses de partida aleatória (\textit{Random Start}) e informada (\textit{Warm Start} / \textit{Low-Temperature Start}).
+Neste relatório técnico, expandiu-se a avaliação experimental do Problema do Caixeiro Viajante ao integrar a Busca Local 2-Opt acelerada por \textit{Don't-Look Bits} e a metaheurística \textit{Simulated Annealing}, ambas confrontadas sob regimes de partida aleatória e partida estruturada a partir das melhores heurísticas construtivas anteriores (H1 e H5).
 
-As conclusões fundamentais são:
-\begin{enumerate}
-    \item Para sistemas com requisitos estritos de \textbf{tempo real ou latência crítica} ($< 10\,\mathrm{ms}$), a combinação \textbf{H5 (Farthest Insertion) + Busca Local 2-Opt} constitui a melhor recomendação prática, atingindo qualidade substancialmente superior à de qualquer heurística construtiva pura com custo temporal insignificante ($7{,}71\,\mathrm{ms}$).
-    \item Quando a latência é prioritária no limite do milissegundo, a heurística autoral \textbf{H1 (Centroid-Based)} consolida-se como a opção mais rápida ($3{,}35\,\mathrm{ms}$) com envoltória consistente.
-    \item Para aplicações em que o objetivo primordial é a \textbf{qualidade absoluta da rota} e há disponibilidade de orçamento de $1$ a $2$ segundos, o \textbf{Simulated Annealing com Random Start} é a metodologia soberana, fornecendo a melhor solução na maioria esmagadora das instâncias da TSPLIB ($1{,}0055\times$).
-    \item O \textbf{SA com Low-Temperature Start (from H5)} estabelece um compromisso intermediário notável, alcançando rotas a $1{,}5\%$ do ótimo em cerca de $0{,}4$ segundos.
-\end{enumerate}
+Os resultados experimentais permitem concluir que, para sistemas com restrições rigorosas de tempo real ou latência crítica (abaixo de $10\,\mathrm{ms}$), a combinação entre a heurística \textbf{H5 (\textit{Farthest Insertion})} e o refinamento por \textbf{Busca Local 2-Opt} representa a solução de maior custo-benefício prático, superando com folga qualquer método construtivo puro com demanda de processamento ínfima ($7{,}71\,\mathrm{ms}$). Quando o objetivo primordial for o tempo de execução no limiar do milissegundo, a heurística autoral \textbf{H1 (\textit{Centroid-Based})} consolida-se como a opção mais ágil ($3{,}35\,\mathrm{ms}$) com qualidade geométrica consistente.
 
-Como trabalhos futuros, propõe-se a investigação de vizinhanças de ordem superior, notadamente o operador 3-Opt e o movimento não sequencial \textit{Double-Bridge} (4-Opt), bem como a exploração da consagrada heurística de profundidade variável de Lin-Kernighan (LK) e de abordagens populacionais evolutivas híbridas (\textit{Memetic Algorithms}).
+Por outro lado, quando o objetivo for a máxima qualidade do circuito e houver disponibilidade de tempo na ordem de um a dois segundos, o \textbf{\textit{Simulated Annealing} com Partida Aleatória} figura como o método dominante, obtendo a melhor rota na ampla maioria das instâncias da TSPLIB com custo relativo de $1{,}0055\times$. Por fim, o \textbf{SA com Partida em Baixa Temperatura a partir de H5} oferece um ponto de equilíbrio vantajoso para otimizações refinadas, entregando circuitos a $1{,}5\%$ do ótimo global com convergência em aproximadamente $0{,}4$ segundos.
 
 % -------------------------------------------------------
 % Referências Bibliográficas
