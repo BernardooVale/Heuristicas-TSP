@@ -1,6 +1,7 @@
 """
 Execução do benchmark comparativo entre Metaheurísticas e as Top-2 Heurísticas (H1 e H5).
 Gera relatórios em CSV e gráficos sem sobrescrever os dados originais.
+Funciona de forma independente, calculando H1 e H5 sob demanda caso 'metricas_tsp.csv' não exista.
 """
 
 import os
@@ -9,39 +10,88 @@ import time
 import pandas as pd
 from tsp.core import read_tsp_file
 from tsp.metaheuristics import simulated_annealing, classical_2opt
-from tsp.heuristics import heuristic_h5_farthest_insertion
+from tsp.heuristics import heuristic_h1_centroid, heuristic_h5_farthest_insertion
 from tsp.visualization import plot_box_candle_with_mean, plot_pareto_front, plot_heatmaps
 
 
 def run_metaheuristics_comparison(base_dir: str = "."):
-    # 1. Carrega métricas existentes das heurísticas
-    orig_csv = os.path.join(base_dir, "resultados", "metricas_tsp.csv")
-    if not os.path.exists(orig_csv):
-        raise FileNotFoundError(f"Arquivo de métricas original não encontrado em: {orig_csv}")
-
-    df_orig = pd.read_csv(orig_csv)
-
-    # Filtra apenas as Top 2 heurísticas (H1 - Centroid-Based e H5 - Farthest Insertion)
-    df_top2 = df_orig[df_orig["heuristic"].isin(["H1 (Centroid-Based)", "H5 (Farthest Insertion)"])].copy()
-
-    # 2. Localiza instâncias TSP
+    # 1. Localiza instâncias TSP
     instances_paths = []
     instances_paths.extend(glob.glob(os.path.join(base_dir, "*.tsp")))
     instances_paths.extend(glob.glob(os.path.join(base_dir, "EUC_2D", "*.tsp")))
     instances_paths = sorted(list(set(instances_paths)))
 
+    if not instances_paths:
+        raise FileNotFoundError("Nenhuma instância .tsp encontrada no diretório raiz ou em EUC_2D/")
+
     print(f"Total de instâncias para rodar metaheurísticas: {len(instances_paths)}")
+
+    # 2. Carrega métricas existentes das heurísticas caso existam
+    orig_csv = os.path.join(base_dir, "resultados", "metricas_tsp.csv")
+    existing_top2 = {}
+    if os.path.exists(orig_csv):
+        print(f"[INFO] Arquivo '{orig_csv}' encontrado. Carregando dados de H1 e H5 já computados...")
+        df_orig = pd.read_csv(orig_csv)
+        df_top2 = df_orig[df_orig["heuristic"].isin(["H1 (Centroid-Based)", "H5 (Farthest Insertion)"])]
+        for _, row in df_top2.iterrows():
+            existing_top2[(row["instance"], row["heuristic"])] = {
+                "cost": row["cost"],
+                "time_ms": row["time_ms"]
+            }
+    else:
+        print(f"[AVISO] Arquivo '{orig_csv}' não encontrado. As heurísticas H1 e H5 serão executadas diretamente.")
 
     records = []
 
     for path in instances_paths:
         instance = read_tsp_file(path)
-        print(f"Processando instância: {instance.name} (Vértices: {instance.dimension})")
+        print(f"\nProcessando instância: {instance.name} (Vértices: {instance.dimension})")
 
-        # Pré-computa rota inicial H5 para as abordagens warm-start
+        # Computa ou recupera H1 (Centroid-Based)
+        if (instance.name, "H1 (Centroid-Based)") in existing_top2:
+            h1_data = existing_top2[(instance.name, "H1 (Centroid-Based)")]
+            h1_cost = h1_data["cost"]
+            h1_time = h1_data["time_ms"]
+        else:
+            t0 = time.perf_counter()
+            h1_tour = heuristic_h1_centroid(instance)
+            h1_time = (time.perf_counter() - t0) * 1000.0
+            h1_cost = instance.calculate_tour_cost(h1_tour)
+
+        records.append({
+            "instance": instance.name,
+            "type": instance.edge_weight_type,
+            "dimension": instance.dimension,
+            "heuristic": "H1 (Centroid-Based)",
+            "cost": h1_cost,
+            "time_ms": h1_time
+        })
+        print(f"  > {'H1 (Centroid-Based)':<25} | Custo: {h1_cost:<9} | Tempo: {h1_time:.2f} ms")
+
+        # Computa rota H5 (necessária para warm-start e registro de H5)
+        t0 = time.perf_counter()
         h5_tour = heuristic_h5_farthest_insertion(instance)
+        h5_calc_time = (time.perf_counter() - t0) * 1000.0
+        h5_cost = instance.calculate_tour_cost(h5_tour)
 
-        # Configuração das variantes a avaliar:
+        # Se já existia tempo de benchmark original para H5, mantém para consistência
+        if (instance.name, "H5 (Farthest Insertion)") in existing_top2:
+            h5_time = existing_top2[(instance.name, "H5 (Farthest Insertion)")]["time_ms"]
+            h5_cost = existing_top2[(instance.name, "H5 (Farthest Insertion)")]["cost"]
+        else:
+            h5_time = h5_calc_time
+
+        records.append({
+            "instance": instance.name,
+            "type": instance.edge_weight_type,
+            "dimension": instance.dimension,
+            "heuristic": "H5 (Farthest Insertion)",
+            "cost": h5_cost,
+            "time_ms": h5_time
+        })
+        print(f"  > {'H5 (Farthest Insertion)':<25} | Custo: {h5_cost:<9} | Tempo: {h5_time:.2f} ms")
+
+        # Configuração das variantes de metaheurística:
         # Hipótese A: Inicialização Aleatória (Random Start)
         # Hipótese B: Inicialização com Heurística (Warm Start / Low-temp Start conforme Johnson & McGeoch)
         experiments = [
@@ -67,10 +117,7 @@ def run_metaheuristics_comparison(base_dir: str = "."):
             })
             print(f"  > {alg_name:<25} | Custo: {cost:<9} | Tempo: {elapsed_ms:.2f} ms")
 
-    df_meta = pd.DataFrame(records)
-
-    # 3. Consolidação com as Top-2 Heurísticas
-    df_combined = pd.concat([df_top2[["instance", "type", "dimension", "heuristic", "cost", "time_ms"]], df_meta], ignore_index=True)
+    df_combined = pd.DataFrame(records)
 
     # Recalcula custo relativo baseado no melhor custo encontrado entre esses métodos
     best_per_inst = df_combined.groupby("instance")["cost"].transform("min")
@@ -96,7 +143,7 @@ def run_metaheuristics_comparison(base_dir: str = "."):
     df_summary.to_csv(csv_summary_path, index=False)
     print(f"[OK] CSV de resumo salvo em: {csv_summary_path}")
 
-    # 4. Geração dos Gráficos Comparativos
+    # 3. Geração dos Gráficos Comparativos
     print("\nGerando gráficos comparativos...")
 
     # Boxplot Custo Relativo

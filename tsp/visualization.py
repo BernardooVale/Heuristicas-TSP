@@ -90,15 +90,34 @@ def plot_pareto_front(df_summary: pd.DataFrame, output_path: str):
     for xi, yi, lab, is_p in zip(x, y, labels, pareto_mask):
         weight = "bold" if is_p else "normal"
         color = "#990000" if is_p else "#1D3557"
+        if "SA (Random Start)" in lab:
+            text_str = f"  {lab}"
+            rot = 0
+            xy_offset = (8, 0)
+            ha_align = "left"
+            va_align = "center"
+        elif "2-Opt (Random Start)" in lab:
+            text_str = f"{lab}  "
+            rot = 0
+            xy_offset = (-8, 0)
+            ha_align = "right"
+            va_align = "center"
+        else:
+            text_str = f"  {lab}"
+            rot = 35
+            xy_offset = (8, 6)
+            ha_align = "left"
+            va_align = "bottom"
+
         plt.annotate(
-            f"  {lab}",
+            text_str,
             (xi, yi),
             textcoords="offset points",
-            xytext=(8, 6),
-            rotation=35,
+            xytext=xy_offset,
+            rotation=rot,
             rotation_mode="anchor",
-            ha="left",
-            va="bottom",
+            ha=ha_align,
+            va=va_align,
             fontsize=9.5,
             fontweight=weight,
             color=color,
